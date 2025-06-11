@@ -64,24 +64,29 @@ app.post("/login", async (req, res) => {
 });
 
 // Pobierz wydatki
-app.get("/expenses", async (req, res) => {
-  const userId = req.user?.id;
-  const result = userId
-    ? await pool.query("SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC", [userId])
-    : await pool.query("SELECT * FROM expenses WHERE user_id IS NULL ORDER BY date DESC");
+app.get("/expenses", authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const result = await pool.query(
+    "SELECT * FROM expenses WHERE user_id = $1 ORDER BY date DESC",
+    [userId]
+  );
   res.json(result.rows);
 });
 
+
 // Dodaj wydatek
-app.post("/expenses", async (req, res) => {
+app.post("/expenses", authMiddleware, async (req, res) => {
+  const userId = req.user.id;
   const { amount, description, category, date } = req.body;
-  const userId = req.user?.id || null;
+
   const result = await pool.query(
-    "INSERT INTO expenses (user_id, amount, description, category, date) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    `INSERT INTO expenses (user_id, amount, description, category, date)
+     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
     [userId, amount, description, category, date]
   );
   res.status(201).json(result.rows[0]);
 });
+
 
 // Edytuj wydatek
 app.put("/expenses/:id", authMiddleware, async (req, res) => {
@@ -106,13 +111,20 @@ app.delete("/expenses/:id", authMiddleware, async (req, res) => {
   res.sendStatus(204);
 });
 
-// Usuń konto
-app.delete("/me", authMiddleware, async (req, res) => {
+// Usuń wszystkie dane użytkownika (wydatki)
+app.delete("/me/expenses", authMiddleware, async (req, res) => {
   const userId = req.user.id;
   await pool.query("DELETE FROM expenses WHERE user_id=$1", [userId]);
+  res.sendStatus(204);
+});
+
+// Usuń konto użytkownika
+app.delete("/me/account", authMiddleware, async (req, res) => {
+  const userId = req.user.id;
   await pool.query("DELETE FROM users WHERE id=$1", [userId]);
   res.sendStatus(204);
 });
+
 
 // Inicjalizacja tabel
 (async () => {
