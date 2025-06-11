@@ -145,7 +145,7 @@ app.delete("/me/account", authMiddleware, async (req, res) => {
 // Inicjalizacja tabel
 (async () => {
   await pool.query(`
-    DROP TABLE users;
+    DROP TABLE users CASCADE;
 
     DROP TABLE expenses;
   `);
