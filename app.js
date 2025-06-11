@@ -74,6 +74,13 @@ app.get("/expenses", authMiddleware, async (req, res) => {
 });
 
 
+app.get("/me/budget", authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const result = await pool.query("SELECT budget FROM users WHERE id=$1", [userId]);
+  res.json({ budget: parseFloat(result.rows[0].budget) || 0 });
+});
+
+
 // Dodaj wydatek
 app.post("/expenses", authMiddleware, async (req, res) => {
   const userId = req.user.id;
@@ -100,6 +107,15 @@ app.put("/expenses/:id", authMiddleware, async (req, res) => {
     [amount, description, category, date, id, userId]
   );
   res.json(result.rows[0]);
+});
+
+app.put("/me/budget", authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+  const { budget } = req.body;
+  if (typeof budget !== "number") return res.status(400).json({ error: "Budżet musi być liczbą" });
+
+  await pool.query("UPDATE users SET budget=$1 WHERE id=$2", [budget, userId]);
+  res.sendStatus(200);
 });
 
 // Usuń wydatek
@@ -132,7 +148,8 @@ app.delete("/me/account", authMiddleware, async (req, res) => {
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL
+      password TEXT NOT NULL,
+      budget NUMERIC DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS expenses (
@@ -145,7 +162,6 @@ app.delete("/me/account", authMiddleware, async (req, res) => {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `);
-
   console.log("Baza danych gotowa.");
 })();
 
