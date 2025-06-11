@@ -145,22 +145,9 @@ app.delete("/me/account", authMiddleware, async (req, res) => {
 // Inicjalizacja tabel
 (async () => {
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      budget NUMERIC DEFAULT 0
-    );
+    DROP TABLE users;
 
-    CREATE TABLE IF NOT EXISTS expenses (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      amount NUMERIC NOT NULL,
-      description TEXT,
-      category TEXT,
-      date DATE NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
+    DROP TABLE expenses;
   `);
   console.log("Baza danych gotowa.");
 })();
